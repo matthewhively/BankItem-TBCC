@@ -284,6 +284,18 @@ local TooltipList = {
 	"TooltipExchange_TooltipShow", -- TooltipExchange support
 }
 
+-- Constants
+local FIRST_BAG      = 0  -- backpack
+local LAST_BAG       = 4  -- 5 total
+local FIRST_BANK_BAG = 5
+local LAST_BANK_BAG  = 11 -- 7 total
+local NUM_BANK_ROWS  = 4
+local NUM_BANK_COLS  = 7
+local NUM_BANK_SLOTS = 28
+local MAX_BAG_SIZE   = 36
+-- NOTE: 36 is the maximum size in retail, but largest that exists in TBC is 28 (Ebon Shadowbag).
+-- It doesn't hurt to set this larger than necessary, so leave it set to retail for future proofing classic-wow (wrath etc)
+
 -------------------------------------------------
 -- OnFoo scripts of the various widgets
 
@@ -482,7 +494,7 @@ function BankItems_Bag_OnClick(self, button)
 		end
 		button:Show()
 	end
-	for bagItem = size + 1, 36 do
+	for bagItem = size + 1, MAX_BAG_SIZE do
 		getglobal(bagName.."Item"..bagItem):Hide()
 	end
 
@@ -733,7 +745,7 @@ function BankItems_UpdateFrame_OnUpdate(self, elapsed)
 	if bagsToUpdate.elap then
 		bagsToUpdate.elap = bagsToUpdate.elap - elapsed
 	end
-	for i = 0, 10 do
+	for i = FIRST_BAG, LAST_BANK_BAG do
 		if (bagsToUpdate[i]) then
 			BankItems_SaveInvItems(i)
 			bagsToUpdate[i] = nil
@@ -763,7 +775,7 @@ do
 	-- Create the main BankItems frame
 	BankItems_Frame = CreateFrame("Frame", "BankItems_Frame", UIParent)
 	BankItems_Frame:Hide()
-	BankItems_Frame:SetWidth(453)
+	BankItems_Frame:SetWidth((50*NUM_BANK_COLS)+103) -- NOTE: Smoothly scale between vanilla-classic with 6 columns and TBC-classic with 7 columns
 	BankItems_Frame:SetHeight(430)
 	BankItems_Frame:SetPoint("TOPLEFT", 50, -104)
 	BankItems_Frame:EnableMouse(true)
@@ -838,14 +850,14 @@ do
 
 	-- had problems with ItemButtonTemplate, ItemButton isn't in classic, now seems to work anyway
 
-	-- Create the 28 (classic 24) main bank buttons
-	for i = 1, 28 do
+	-- Create the main bank buttons
+	for i = 1, NUM_BANK_SLOTS do
 		ItemButtonAr[i] = CreateFrame("Button", "BankItems_Item"..i, BankItems_Frame, "ItemButtonTemplate")
 		ItemButtonAr[i]:SetID(i)
 		if (i == 1) then
 			ItemButtonAr[i]:SetPoint("TOPLEFT", 40, -73)
-		elseif (mod(i, 7) == 1) then
-			ItemButtonAr[i]:SetPoint("TOPLEFT", ItemButtonAr[i-7], "BOTTOMLEFT", 0, -7)
+		elseif (mod(i, NUM_BANK_COLS) == 1) then
+			ItemButtonAr[i]:SetPoint("TOPLEFT", ItemButtonAr[i-NUM_BANK_COLS], "BOTTOMLEFT", 0, -7)
 		else
 			ItemButtonAr[i]:SetPoint("TOPLEFT", ItemButtonAr[i-1], "TOPRIGHT", 12, 0)
 		end
@@ -853,7 +865,7 @@ do
 		ItemButtonAr[i].texture = _G["BankItems_Item"..i.."IconTexture"]
 	end
 
-	-- Create the 14 (classic 12) bag buttons
+	-- Create the bag buttons
 	for _, i in ipairs(BAGNUMBERS) do
 		BagButtonAr[i] = CreateFrame("Button", "BankItems_Bag"..i, BankItems_Frame, "ItemButtonTemplate")
 		BagButtonAr[i]:SetID(i)
@@ -874,6 +886,7 @@ do
 	BagButtonAr[9]:SetPoint("TOPLEFT", BagButtonAr[8], "TOPRIGHT", 12, 0)
 	BagButtonAr[10]:SetPoint("TOPLEFT", BagButtonAr[9], "TOPRIGHT", 12, 0)
 	BagButtonAr[11]:SetPoint("TOPLEFT", BagButtonAr[10], "TOPRIGHT", 12, 0)
+
 	BagButtonAr[100]:SetPoint("TOPLEFT", BagButtonAr[6], "BOTTOMLEFT", 0, -6) -- bottom row, player bags
 	BagButtonAr[4]:SetPoint("TOPLEFT", BagButtonAr[100], "TOPRIGHT", 12, 0)
 	BagButtonAr[3]:SetPoint("TOPLEFT", BagButtonAr[4], "TOPRIGHT", 12, 0)
@@ -912,7 +925,7 @@ do
 	BankItems_TotalMoneyText:SetJustifyH("LEFT")
 	BankItems_TotalMoneyText:SetPoint("LEFT", "BankItems_MoneyFrameTotalCopperButton", "RIGHT")
 
-	-- Create the 14 (classic 12) bags
+	-- Create the bag frames
 	for _, i in ipairs(BAGNUMBERS) do
 		local name = "BankItems_ContainerFrame"..i
 		BagContainerAr[i] = CreateFrame("Frame", name, UIParent)
@@ -944,7 +957,8 @@ do
 		BagContainerAr[i].name:SetWidth(112)
 		BagContainerAr[i].name:SetHeight(12)
 		BagContainerAr[i].name:SetPoint("TOPLEFT", 47, -10)
-		for j = 1, 40 do
+		-- Setup frames for each bag slot within the bag frame. NOTE: may create more frames than the actual bag.size
+		for j = 1, MAX_BAG_SIZE do
 			BagContainerAr[i][j] = CreateFrame("Button", name.."Item"..j, BagContainerAr[i], "ItemButtonTemplate")
 			BagContainerAr[i][j]:SetID(j)
 			BagContainerAr[i][j].count = _G[name.."Item"..j.."Count"]
@@ -1271,7 +1285,7 @@ end
 function BankItems_SaveItems()
 	local itemLink, bagNum_ID
 	if (isBankOpen) then
-		for num = 1, 28 do
+		for num = 1, NUM_BANK_SLOTS do
 			itemLink = GetContainerItemLink(BANK_CONTAINER, num)
 			if (itemLink) then
 				selfPlayer[num] = selfPlayer[num] or newTable()
@@ -1282,7 +1296,7 @@ function BankItems_SaveItems()
 				selfPlayer[num] = nil
 			end
 		end
-		for bagNum = 5, 11 do
+		for bagNum = FIRST_BANK_BAG, LAST_BANK_BAG do
 			bagNum_ID = BankButtonIDToInvSlotID(bagNum, 1) - 4
 			itemLink = GetInventoryItemLink("player", bagNum_ID)
 			if (itemLink) then
@@ -1313,7 +1327,7 @@ function BankItems_SaveItems()
 	end
 	if (BankItems_Frame:IsVisible()) then
 		BankItems_PopulateFrame()
-		for i = 5, 11 do
+		for i = FIRST_BANK_BAG, LAST_BANK_BAG do
 			if (BagContainerAr[i]:IsVisible()) then
 				BankItems_PopulateBag(i)
 			end
@@ -1472,13 +1486,13 @@ end
 
 function BankItems_OpenBagsByBehavior(bank, inv, equip)
 	if inv then
-		for i = 0, 4 do
+		for i = FIRST_BAG, LAST_BAG do
 			BagContainerAr[i]:Hide()
 			BagButtonAr[i]:Click()
 		end
 	end
 	if bank then
-		for i = 5, 11 do
+		for i = FIRST_BANK_BAG, LAST_BANK_BAG do
 			BagContainerAr[i]:Hide()
 			BagButtonAr[i]:Click()
 		end
@@ -1515,8 +1529,8 @@ function BankItems_PopulateFrame()
 	else
 		BankItems_Portrait:SetTexture("Interface\\QuestFrame\\UI-QuestLog-BookIcon")
 	end
-	-- 24 bank slots
-	for i = 1, 28 do
+	-- bank slots
+	for i = 1, NUM_BANK_SLOTS do
 		if ( bankPlayer[i] ) then
 			ItemButtonAr[i].texture:SetTexture(bankPlayer[i].icon)
 			if (bankPlayer[i].count > 1) then
@@ -1530,14 +1544,14 @@ function BankItems_PopulateFrame()
 			ItemButtonAr[i].count:Hide()
 		end
 	end
-	-- 12 bag slots
-	for i = 0, 11 do
+	-- 2 rows of bag slots
+	for i = 0, LAST_BANK_BAG do
 		if ( bankPlayer["Bag"..i] and bankPlayer["Bag"..i].icon ) then
 			BagButtonAr[i].texture:SetTexture(bankPlayer["Bag"..i].icon)
 			BagButtonAr[i].texture:SetVertexColor(1, 1, 1)
 		else
 			BagButtonAr[i].texture:SetTexture("Interface\\PaperDoll\\UI-PaperDoll-Slot-Bag")
-			if (i >= 5) then
+			if (i >= FIRST_BANK_BAG) then
 				if (bankPlayer["NumBankSlots"] and (i - 4) <= bankPlayer["NumBankSlots"]) then
 					BagButtonAr[i].texture:SetVertexColor(1, 1, 1)
 				else
@@ -1808,7 +1822,7 @@ function BankItems_GenerateExportText()
 		-- Group similar items together in the report
 		local data = newTable()
 		local itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture
-		for num = 1, 28 do
+		for num = 1, NUM_BANK_SLOTS do
 			if (bankPlayer[num]) then
 				itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture = GetItemInfo(bankPlayer[num].link)
 				if (itemType) then
@@ -1863,7 +1877,7 @@ function BankItems_GenerateExportText()
 		delTable(data)
 	else
 		-- Don't group similar items together in the report
-		for num = 1, 28 do
+		for num = 1, NUM_BANK_SLOTS do
 			if bankPlayer[num] then
 				if BankItems_Save.ExportPrefix then
 					prefix = "Bank Item "..num..": "
@@ -1911,7 +1925,7 @@ function BankItems_Search(searchText)
 		for key, bankPlayer in pairs(BankItems_Save) do
 			local _, realm = strsplit("|", key)
 			if (type(bankPlayer) == "table" and (BankItems_Save.SearchAllRealms or realm == selfPlayerRealm) and key ~= "Behavior") then
-				for num = 1, 28 do
+				for num = 1, NUM_BANK_SLOTS do
 					if (bankPlayer[num]) then
 						temp = strmatch(bankPlayer[num].link, "%[(.*)%]")
 						if strfind(strlower(temp), searchText, 1, true) then
@@ -1936,7 +1950,7 @@ function BankItems_Search(searchText)
 									data[temp] = data[temp] or newTable()
 									data[temp][key] = data[temp][key] or newTable()
 									data[temp][key].count = (data[temp][key].count or 0) + (theBag[bagItem].count or 1)
-									if (bagNum >= 0 and bagNum <= 4) then
+									if (bagNum >= 0 and bagNum <= LAST_BAG) then
 										data[temp][key].inv = (data[temp][key].inv or 0) + (theBag[bagItem].count or 1)
 									elseif (bagNum == 101) then
 										data[temp][key].mail = (data[temp][key].mail or 0) + (theBag[bagItem].count or 1)
@@ -1985,7 +1999,7 @@ function BankItems_Search(searchText)
 			local _, realm = strsplit("|", key)
 			if (type(bankPlayer) == "table" and (BankItems_Save.SearchAllRealms or realm == selfPlayerRealm) and key ~= "Behavior") then
 				count = 0
-				for num = 1, 28 do
+				for num = 1, NUM_BANK_SLOTS do
 					if ( bankPlayer[num] and bankPlayer[num].link ) then
 						if (BankItems_Save.ExportPrefix) then
 							prefix = "     Bank Item "..num..": "
@@ -2355,25 +2369,26 @@ end
 -------------------------------------------------
 -- Set scripts of the various widgets
 
--- The 24 main bank buttons
-for i = 1, 28 do
+-- The main bank buttons
+for i = 1, NUM_BANK_SLOTS do
 	ItemButtonAr[i]:SetScript("OnLeave", BankItems_Button_OnLeave)
 	ItemButtonAr[i]:SetScript("OnEnter", BankItems_Button_OnEnter)
 	ItemButtonAr[i]:SetScript("OnClick", BankItems_Button_OnClick)
 end
 
--- The 14 (classic 12) bag buttons
+-- The bag buttons
 for _, i in ipairs(BAGNUMBERS) do
+	-- Handlers for BagButtonAr
 	BagButtonAr[i]:SetScript("OnLeave", BankItems_Button_OnLeave)
 	BagButtonAr[i]:SetScript("OnEnter", BankItems_Bag_OnEnter)
 	BagButtonAr[i]:SetScript("OnClick", BankItems_Bag_OnClick)
-end
 
--- The 14 (classic 12) bags
-for _, i in ipairs(BAGNUMBERS) do
+	-- Handlers for BagContainerAr
 	BagContainerAr[i]:SetScript("OnShow", BankItems_Bag_OnShow)
 	BagContainerAr[i]:SetScript("OnHide", BankItems_Bag_OnHide)
-	for j = 1, 40 do
+	-- Setup handlers for each item in a bag frame.
+	-- NOTE: includes slots that don't exist for a given bag size, so that we don't have to bind dynamically as bags change
+	for j = 1, MAX_BAG_SIZE do
 		BagContainerAr[i][j]:SetScript("OnLeave", BankItems_Button_OnLeave)
 		BagContainerAr[i][j]:SetScript("OnEnter", BankItems_BagItem_OnEnter)
 		BagContainerAr[i][j]:SetScript("OnClick", BankItems_BagItem_OnClick)
