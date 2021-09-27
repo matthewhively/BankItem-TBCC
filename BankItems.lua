@@ -2992,8 +2992,9 @@ do
 	BankItems_ButtonRadiusSlider:SetMinMaxValues(0,200)
 	BankItems_ButtonRadiusSlider:SetValueStep(1)
 	BankItems_ButtonRadiusSlider:SetScript("OnValueChanged", function(self, value)
-		BankItems_ButtonRadiusSliderText:SetText(BANKITEMS_BUTTONRADIUS_TEXT.." "..value)
-		BankItems_Save.ButtonRadius = value
+		local tmp = tonumber(string.format("%d", value))
+		BankItems_ButtonRadiusSliderText:SetText(BANKITEMS_BUTTONRADIUS_TEXT.." "..tmp)
+		BankItems_Save.ButtonRadius = tmp
 		BankItems_MinimapButton_UpdatePosition()
 	end)
 
@@ -3008,8 +3009,9 @@ do
 	BankItems_ButtonPosSlider:SetMinMaxValues(0, 360)
 	BankItems_ButtonPosSlider:SetValueStep(1)
 	BankItems_ButtonPosSlider:SetScript("OnValueChanged", function(self, value)
-		BankItems_ButtonPosSliderText:SetText(BANKITEMS_BUTTONPOS_TEXT.." "..value)
-		BankItems_Save.ButtonPosition = value
+		local tmp = tonumber(string.format("%d", value))
+		BankItems_ButtonPosSliderText:SetText(BANKITEMS_BUTTONPOS_TEXT.." "..tmp)
+		BankItems_Save.ButtonPosition = tmp
 		BankItems_MinimapButton_UpdatePosition()
 	end)
 
@@ -3024,9 +3026,10 @@ do
 	BankItems_TransparencySlider:SetMinMaxValues(25, 100)
 	BankItems_TransparencySlider:SetValueStep(1)
 	BankItems_TransparencySlider:SetScript("OnValueChanged", function(self, value)
-		BankItems_TransparencySliderText:SetText(BANKITEMS_TRANSPARENCY_TEXT.." "..value.."%")
-		BankItems_Save.Transparency = value
-		BankItems_Frame:SetAlpha(value / 100)
+		local tmp = tonumber(string.format("%d", value))
+		BankItems_TransparencySliderText:SetText(BANKITEMS_TRANSPARENCY_TEXT.." "..tmp.."%")
+		BankItems_Save.Transparency = tmp
+		BankItems_Frame:SetAlpha(tmp / 100)
 	end)
 
 	-- Scale slider
@@ -3040,9 +3043,10 @@ do
 	BankItems_ScaleSlider:SetMinMaxValues(50, 100)
 	BankItems_ScaleSlider:SetValueStep(1)
 	BankItems_ScaleSlider:SetScript("OnValueChanged", function(self, value)
-		BankItems_ScaleSliderText:SetText(BANKITEMS_SCALING_TEXT.." "..value.."%")
-		BankItems_Save.Scale = value
-		BankItems_Frame:SetScale(value / 100)
+		local tmp = tonumber(string.format("%d", value))
+		BankItems_ScaleSliderText:SetText(BANKITEMS_SCALING_TEXT.." "..tmp.."%")
+		BankItems_Save.Scale = tmp
+		BankItems_Frame:SetScale(tmp / 100)
 		if (BankItems_Save.BagParent == 1) then
 			for _, i in ipairs(BAGNUMBERS) do
 				BagContainerAr[i]:SetScale(BankItems_Save.Scale / 100)
