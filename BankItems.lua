@@ -217,7 +217,7 @@ BankItems_SelfCache    = {} -- table, contains a cache of only the player's item
 BankItems_TooltipCache = {} -- table, contains a cache of tooltip lines that have been added
 
 -- Some constants
-local BANKITEMS_BOTTOM_SCREEN_LIMIT	= 80				-- Pixels from bottom not to overlap BankItem bags
+local BANKITEMS_BOTTOM_SCREEN_LIMIT	= 80			-- Pixels from bottom not to overlap BankItem bags
 local BANKITEMS_UCFA = updateContainerFrameAnchors	-- Remember Blizzard's UCFA for NON-SAFE replacement
 local BAGNUMBERS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 100}	-- List of bag numbers used internally by BankItems (101 not available in classic)
 local BAGNUMBERSPLUSMAIL = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 100, 101}	-- List of bag numbers used internally by BankItems (used for search and export, needs everything include 101)
@@ -767,7 +767,7 @@ end
 
 
 ----------------------------------
--- Create frames
+-- Create all frames
 
 do
 	local temp
@@ -1212,6 +1212,8 @@ function BankItems_Initialize()
 		BankItems_Save.posoffsety = -104
 	end
 	BankItems_Frame:SetPoint(BankItems_Save.pospoint, UIParent, BankItems_Save.posrelpoint, BankItems_Save.posoffsetx, BankItems_Save.posoffsety)
+	-- TODO: Action[SetPoint] failed because[SetPoint would result in anchor family connection]: attempted from: BankItems_Frame:SetPoint.
+	-- Unknown reproduction steps
 
 	-- Upgrade behavior
 	if (type(BankItems_Save.Behavior) == "number") then
@@ -1623,13 +1625,18 @@ function BankItems_PopulateBag(bagID)
 	end
 end
 
+-- Choose where to place each bag frame according to remaining screen height.
+-- NOTE: they can go off the right hand side of the screen.
 function BankItemsUpdateCFrameAnchors()
 	local BANKITEMS_BOTTOM_SCREEN_LIMIT2 = BANKITEMS_BOTTOM_SCREEN_LIMIT / BankItems_Frame:GetScale()  -- scale it
 	local prevBag, currBag, colBag
 	local freeScreenHeight = BankItems_Frame:GetBottom() - BANKITEMS_BOTTOM_SCREEN_LIMIT2
 	local col
 
-	-- First bag
+	-- TODO: refactor so we don't need separate logic for the first bag.
+	-- Also DRY this up by using the conditionals to choose the column to place it in, and then executing appropriate logic based on the chosen column.
+
+	-- Position the First bag
 	if BankItemsCFrames.bags[1] then
 		prevBag = getglobal(BankItemsCFrames.bags[1])
 		colBag = prevBag
@@ -1654,23 +1661,23 @@ function BankItemsUpdateCFrameAnchors()
 		if freeScreenHeight < currBag:GetHeight() then
 			-- No space, so anchor in next column
 			if col == 1 then
-				-- Check column 2
+				-- If we're in col 1, Check column 2
 				freeScreenHeight = BankItems_Frame:GetBottom() - BANKITEMS_BOTTOM_SCREEN_LIMIT2
 				if freeScreenHeight < currBag:GetHeight() then
 					-- No space in column 2, so anchor in column 3
 					currBag:SetPoint("TOPLEFT", BankItems_Frame, "TOPRIGHT", 0, 0)
 					freeScreenHeight = BankItems_Frame:GetTop() - currBag:GetHeight() - BANKITEMS_BOTTOM_SCREEN_LIMIT2
 				else
-					-- Anchor in column 2
+					-- Anchor in column 2 relative to colBag (if exists)
 					currBag:SetPoint("TOPLEFT", colBag, "TOPRIGHT", 0, 0)
 					freeScreenHeight = BankItems_Frame:GetBottom() - currBag:GetHeight() - BANKITEMS_BOTTOM_SCREEN_LIMIT2
 				end
 			elseif col == 2 then
-				-- Anchor in column 3
+				-- If we're in col 2, Anchor in column 3
 				currBag:SetPoint("TOPLEFT", BankItems_Frame, "TOPRIGHT", 0, 0)
 				freeScreenHeight = BankItems_Frame:GetTop() - currBag:GetHeight() - BANKITEMS_BOTTOM_SCREEN_LIMIT2
 			else
-				-- Anchor in next column relative to colBag
+				-- If we're already in col 3+, Anchor in next column relative to colBag (if exists)
 				currBag:SetPoint("TOPLEFT", colBag, "TOPRIGHT", 0, 0)
 				freeScreenHeight = BankItems_Frame:GetTop() - currBag:GetHeight() - BANKITEMS_BOTTOM_SCREEN_LIMIT2
 			end
@@ -2754,6 +2761,7 @@ tinsert(UISpecialFrames, "BankItems_ExportFrame")
 ---------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------
 -- Minimap Button
+-- TODO: move into a separate file ?
 
 CreateFrame("Button", "BankItems_MinimapButton", Minimap)
 BankItems_MinimapButton:EnableMouse(true)
@@ -2847,6 +2855,7 @@ BankItems_MinimapButton:SetScript("OnEvent", BankItems_MinimapButton_Init)
 ---------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------
 -- Options Frame
+-- TODO: move into a separate file?
 
 do
 	local temp
@@ -3111,7 +3120,7 @@ end
 
 function BankItems_BehaviorDropDown_Initialize()
 	for i = 1, #BANKITEMS_BEHAVIORLIST do
-		info.checked		= BankItems_Save.Behavior[i]
+		info.checked	= BankItems_Save.Behavior[i]
 		info.text		= BANKITEMS_BEHAVIORLIST[i]
 		info.func		= BankItems_BehaviorDropDown_OnClick
 		info.arg1		= i
@@ -3144,6 +3153,7 @@ BankItems_OptionsFrame:SetScript("OnShow", BankItems_Options_OnShow)
 ---------------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------------
 -- Export Frame
+-- TODO: move into separate file?
 
 do
 	local temp
