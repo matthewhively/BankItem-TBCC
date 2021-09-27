@@ -291,11 +291,12 @@ local TooltipList = {
 
 -- NOTE: very similar to internals of BankItems_BagItem_OnEnter
 function BankItems_Button_OnEnter(self)
-	if (bankPlayer[self:GetID()]) then
-		BankItems_Quantity = bankPlayer[self:GetID()].count or 1
+	local item = bankPlayer[self:GetID()]
+	if (item) then
+		BankItems_Quantity = item.count or 1
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:SetHyperlink(bankPlayer[self:GetID()].link)
-		BankItems_AddEnhTooltip(bankPlayer[self:GetID()].link, BankItems_Quantity)
+		GameTooltip:SetHyperlink(item.link)
+		BankItems_AddEnhTooltip(item.link, BankItems_Quantity)
 		if ( IsControlKeyDown() ) then
 			ShowInspectCursor()
 		end
