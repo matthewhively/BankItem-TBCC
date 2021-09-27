@@ -1,4 +1,4 @@
-﻿--[[	*****************************************************************
+--[[	*****************************************************************
 	BankItems v2.56
 	2021-January-10
 
@@ -219,10 +219,10 @@ BankItems_TooltipCache = {} -- table, contains a cache of tooltip lines that hav
 -- Some constants
 local BANKITEMS_BOTTOM_SCREEN_LIMIT	= 80				-- Pixels from bottom not to overlap BankItem bags
 local BANKITEMS_UCFA = updateContainerFrameAnchors	-- Remember Blizzard's UCFA for NON-SAFE replacement
-local BAGNUMBERS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 100} -- List of bag numbers used internally by BankItems (11 and 101 removed for Classic)
-local BAGNUMBERSPLUSMAIL = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 101}	-- List of bag numbers used internally by BankItems (11 removed for Classic)
+local BAGNUMBERS = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 100}	-- List of bag numbers used internally by BankItems (101 not available in classic)
+local BAGNUMBERSPLUSMAIL = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 100, 101}	-- List of bag numbers used internally by BankItems (used for search and export, needs everything include 101)
 -- 0 through 4 are the player's bags, to be shown in reverse order, preceded by 100, the player's equipment
--- 5 through 10 are the bank bags, left to right
+-- 5 through 11 are the bank bags, left to right
 -- 101 is never visible, contains the mail information
 local BANKITEMS_UIPANELWINDOWS_TABLE = {area = "left", pushable = 11, whileDead = 1}	-- UI Panel layout to be used
 local BANKITEMS_INVSLOT = {
@@ -287,6 +287,9 @@ local TooltipList = {
 -------------------------------------------------
 -- OnFoo scripts of the various widgets
 
+-- BankItems_Button = any item icon in the main frame.
+
+-- NOTE: very similar to internals of BankItems_BagItem_OnEnter
 function BankItems_Button_OnEnter(self)
 	if (bankPlayer[self:GetID()]) then
 		BankItems_Quantity = bankPlayer[self:GetID()].count or 1
@@ -299,6 +302,7 @@ function BankItems_Button_OnEnter(self)
 	end
 end
 
+-- Allows you to generate chat links or dress up the paper doll (just like you can from regular inventory items)
 function BankItems_Button_OnClick(self, button)
 	if (bankPlayer[self:GetID()]) then
 		if ( IsControlKeyDown() ) then
@@ -308,6 +312,9 @@ function BankItems_Button_OnClick(self, button)
 		end
 	end
 end
+
+
+-- BankItems_Bag = Any bags in the bags rows
 
 function BankItems_Bag_OnEnter(self)
 	local id = self:GetID()
@@ -324,6 +331,7 @@ function BankItems_Bag_OnEnter(self)
 	end
 end
 
+-- Opens the bag frame, scales it to the container size of the bag and populates it with items.
 function BankItems_Bag_OnClick(self, button)
 	local bagID = self:GetID()
 	local theBag = bankPlayer["Bag"..bagID]
@@ -514,6 +522,8 @@ function BankItems_Bag_OnHide(self)
 	PlaySound(SOUNDKIT.IG_BACKPACK_CLOSE)
 end
 
+-- BankItems_BagItem = Any item slot within any bag frame
+
 function BankItems_BagItem_OnEnter(self)
 	local bagID = self:GetParent():GetID()
 	local itemID = bankPlayer["Bag"..bagID].size - ( self:GetID() - 1 )
@@ -567,6 +577,7 @@ function BankItems_BagItem_OnClick(self, button)
 	end
 end
 
+-- when you mouse over the bag's portrait
 function BankItems_BagPortrait_OnEnter(self)
 	GameTooltip:SetOwner(self, "ANCHOR_LEFT")
 	local bagNum = self:GetParent():GetID()
@@ -591,10 +602,13 @@ function BankItems_AddEnhTooltip(link, quantity)
 	end
 end
 
+-- NOTE: this method is used by ANY element that has a mouse-over tooltip, essentially its just "hide-tooltip" and "reset cursor"
 function BankItems_Button_OnLeave(self)
 	ResetCursor()
 	GameTooltip:Hide()
 end
+
+-- BankItems_Frame = Main BankItems frame within which all other BankItem frames exist.
 
 function BankItems_Frame_OnShow(self)
 	PlaySound(SOUNDKIT.IG_MAINMENU_OPEN)
@@ -603,6 +617,7 @@ end
 
 function BankItems_Frame_OnHide(self)
 	PlaySound(SOUNDKIT.IG_MAINMENU_OPEN)
+	-- Also close any open bag frames.
 	for _, i in ipairs(BAGNUMBERS) do
 		BagContainerAr[i]:Hide()
 	end
@@ -623,6 +638,7 @@ function BankItems_Frame_OnDragStop(self)
 	BankItems_Save.pospoint, _, BankItems_Save.posrelpoint, BankItems_Save.posoffsetx, BankItems_Save.posoffsety = BankItems_Frame:GetPoint()
 end
 
+-- Handle all events that cause any part of BankItems to need to update.
 function BankItems_Frame_OnEvent(self, event, ...)
 	local arg1 = ...
 
@@ -712,6 +728,7 @@ function BankItems_Frame_OnEvent(self, event, ...)
 	end
 end
 
+-- Update slots within the bank (called by multiple events)
 function BankItems_UpdateFrame_OnUpdate(self, elapsed)
 	if bagsToUpdate.elap then
 		bagsToUpdate.elap = bagsToUpdate.elap - elapsed
@@ -849,6 +866,7 @@ do
 		BagButtonAr[i].count = _G["BankItems_Bag"..i.."Count"]
 		BagButtonAr[i].texture = _G["BankItems_Bag"..i.."IconTexture"]
 	end
+    -- SetPoint( object_point_offsets_reffer_to , relative_frame, attachment_point_relative_frame , X offset, Y offset)
 	BagButtonAr[5]:SetPoint("TOPLEFT", ItemButtonAr[22], "BOTTOMLEFT", 0, -33) -- top row, bank bags
 	BagButtonAr[6]:SetPoint("TOPLEFT", BagButtonAr[5], "TOPRIGHT", 12, 0)
 	BagButtonAr[7]:SetPoint("TOPLEFT", BagButtonAr[6], "TOPRIGHT", 12, 0)
@@ -1080,6 +1098,7 @@ end
 ------------------------------------------------------
 -- BankItems functions
 
+-- Perform action based on slash command (also mini-map icon)
 function BankItems_SlashHandler(msg)
 	msg = strtrim(strlower(msg or ""))
 	local allBags
@@ -1248,6 +1267,7 @@ function BankItems_SaveZone()
 	end
 end
 
+-- Get item updates in the bank slots or bags.
 function BankItems_SaveItems()
 	local itemLink, bagNum_ID
 	if (isBankOpen) then
@@ -1301,6 +1321,9 @@ function BankItems_SaveItems()
 	end
 end
 
+-- Get items in each slot and save them into the BankItemsDB
+-- Does not attempt to scan bank items unless the bank is open.
+-- Will try to update only specific bags if requested to do so.
 function BankItems_SaveInvItems(bagID)
 	-- valid inputs to function: integer indicating bagID to update, or string "inv" to update worn items
 	-- or nil to update all bags and worn items
@@ -1484,6 +1507,7 @@ function BankItems_UpdateMoney()
 	MoneyFrame_Update("BankItems_MoneyFrame", bankPlayer.money or 0)
 end
 
+-- Draw the items within main frame.
 function BankItems_PopulateFrame()
 	-- Portrait
 	if bankPlayer == selfPlayer then
@@ -1543,6 +1567,7 @@ function BankItems_PopulateFrame()
 	end
 end
 
+-- Draw the items within a given bag frame.
 function BankItems_PopulateBag(bagID)
 	local _, button, theBag, idx, textureName
 	theBag = bankPlayer["Bag"..bagID]
