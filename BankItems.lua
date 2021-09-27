@@ -1642,7 +1642,7 @@ function BankItemsUpdateCFrameAnchors()
 		colBag = prevBag
 		if freeScreenHeight < prevBag:GetHeight() then
 			-- No space in column 1, so anchor in column 3
-			prevBag:SetPoint("TOPLEFT", BankItems_Frame, "TOPRIGHT", 0, 0)
+			prevBag:SetPoint("TOPLEFT", BankItems_Frame, "TOPRIGHT", -50, -10)
 			freeScreenHeight = BankItems_Frame:GetTop() - prevBag:GetHeight() - BANKITEMS_BOTTOM_SCREEN_LIMIT2
 			col = 3
 		else
@@ -1665,7 +1665,7 @@ function BankItemsUpdateCFrameAnchors()
 				freeScreenHeight = BankItems_Frame:GetBottom() - BANKITEMS_BOTTOM_SCREEN_LIMIT2
 				if freeScreenHeight < currBag:GetHeight() then
 					-- No space in column 2, so anchor in column 3
-					currBag:SetPoint("TOPLEFT", BankItems_Frame, "TOPRIGHT", 0, 0)
+					currBag:SetPoint("TOPLEFT", BankItems_Frame, "TOPRIGHT", -50, -10)
 					freeScreenHeight = BankItems_Frame:GetTop() - currBag:GetHeight() - BANKITEMS_BOTTOM_SCREEN_LIMIT2
 				else
 					-- Anchor in column 2 relative to colBag (if exists)
@@ -1674,7 +1674,7 @@ function BankItemsUpdateCFrameAnchors()
 				end
 			elseif col == 2 then
 				-- If we're in col 2, Anchor in column 3
-				currBag:SetPoint("TOPLEFT", BankItems_Frame, "TOPRIGHT", 0, 0)
+				currBag:SetPoint("TOPLEFT", BankItems_Frame, "TOPRIGHT", -50, -10)
 				freeScreenHeight = BankItems_Frame:GetTop() - currBag:GetHeight() - BANKITEMS_BOTTOM_SCREEN_LIMIT2
 			else
 				-- If we're already in col 3+, Anchor in next column relative to colBag (if exists)
