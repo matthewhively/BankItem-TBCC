@@ -469,7 +469,6 @@ function BankItems_Bag_OnClick(self, button)
 	bagFrame:SetWidth(CONTAINER_WIDTH)
 
 	for bagItem = 1, size do
-		local idx = size - (bagItem - 1)
 		local button = getglobal(bagName.."Item"..bagItem)
 		if ( bagItem == 1 ) then
 			button:SetPoint("BOTTOMRIGHT", bagName, "BOTTOMRIGHT", -12, 9)
