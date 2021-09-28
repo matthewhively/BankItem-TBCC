@@ -1079,11 +1079,6 @@ end
 ------------------------------------------------------
 -- Utility functions
 
--- Trims leading and trailing whitespace from a string
-function BankItems_Trim(s)
-	return gsub(s, "^%s*(.-)%s*$", "%1")
-end
-
 -- Extracts the itemName out from a full itemLink
 function BankItems_ParseLink(link)
 	return strmatch(link, "%[(.*)%]") or link
