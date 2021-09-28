@@ -296,6 +296,13 @@ local MAX_BAG_SIZE   = 36
 -- NOTE: 36 is the maximum size in retail, but largest that exists in TBC is 28 (Ebon Shadowbag).
 -- It doesn't hurt to set this larger than necessary, so leave it set to retail for future proofing classic-wow (wrath etc)
 
+-- Prints a chat message (for info, and debugging)
+function BankItems_Chat(msg)
+	if (DEFAULT_CHAT_FRAME) then
+		DEFAULT_CHAT_FRAME:AddMessage("<BankItems> "..msg, 1, 1, 0)
+	end
+end
+
 -------------------------------------------------
 -- OnFoo scripts of the various widgets
 
@@ -647,6 +654,7 @@ end
 function BankItems_Frame_OnDragStop(self)
 	self:StopMovingOrSizing()
 	self:SetScript("OnUpdate", nil)
+	-- NOTE: GetPoint seems to intelligently return the nearest position to minimmize the offsets (top/left/bottom/right etc)
 	BankItems_Save.pospoint, _, BankItems_Save.posrelpoint, BankItems_Save.posoffsetx, BankItems_Save.posoffsety = BankItems_Frame:GetPoint()
 end
 
@@ -730,12 +738,28 @@ function BankItems_Frame_OnEvent(self, event, ...)
 
 	elseif event == "ADDON_LOADED" and arg1 == "BankItems" then
 		BankItems_Initialize()
-		BankItems_Generate_ItemCache()
 		self:UnregisterEvent(event)
+		if selfPlayer then
+			BankItems_Generate_ItemCache()
+			BankItems_Initialize = nil
+		end
 
+	elseif event == "PLAYER_LOGIN" then
+		if not selfPlayer and BankItems_Initialize then
+			--selfPlayer didn't set at ADDON_LOADED so try initializing again now
+			BankItems_Initialize()
+			BankItems_Generate_ItemCache()
+			BankItems_Initialize = nil
+		end
+		-- init2 ???
+		--BankItems_Initialize3()
+		--BankItems_Initialize3 = nil
+
+	-- Fired in response to the CVars, Keybindings and other associated "Blizzard" variables being loaded. 
 	elseif event == "VARIABLES_LOADED" then
 		-- This overrides layout-cache.txt and also ensures all non-LoD addons have already loaded
-		BankItems_Initialize()
+		BankItems_Initialize2()
+		BankItems_Initialize2 = nil
 
 	end
 end
@@ -769,6 +793,7 @@ end
 ----------------------------------
 -- Create all frames
 
+-- TODO: in retail this is a method called "BankItems_CreateFrames"
 do
 	local temp
 
@@ -777,7 +802,9 @@ do
 	BankItems_Frame:Hide()
 	BankItems_Frame:SetWidth((50*NUM_BANK_COLS)+103) -- NOTE: Smoothly scale between vanilla-classic with 6 columns and TBC-classic with 7 columns
 	BankItems_Frame:SetHeight(430)
-	BankItems_Frame:SetPoint("TOPLEFT", 50, -104)
+
+	--BankItems_Frame:SetPoint("TOPLEFT", 50, -104) -- TODO: this is overriding whatever came from saved vars?
+	-- TODO: in retail this is NOT inside BankItems_CreateFrames
 	BankItems_Frame:EnableMouse(true)
 	BankItems_Frame:SetToplevel(true)
 	BankItems_Frame:SetMovable(true)
@@ -1057,13 +1084,6 @@ function BankItems_Trim(s)
 	return gsub(s, "^%s*(.-)%s*$", "%1")
 end
 
--- Prints a chat message
-function BankItems_Chat(msg)
-	if (DEFAULT_CHAT_FRAME) then
-		DEFAULT_CHAT_FRAME:AddMessage("<BankItems> "..msg, 1, 1, 0)
-	end
-end
-
 -- Extracts the itemName out from a full itemLink
 function BankItems_ParseLink(link)
 	return strmatch(link, "%[(.*)%]") or link
@@ -1191,29 +1211,34 @@ function BankItems_SlashHandler(msg)
 end
 
 function BankItems_Initialize()
+	-- Fires at ADDON_LOADED and again at PLAYER_LOGIN if selfPlayer is still nil
 	-- Set variables about self
-	selfPlayerRealm = BankItems_Trim(GetRealmName())
+	selfPlayerRealm = strtrim(GetRealmName())
 	selfPlayerName = UnitName("player").."|"..selfPlayerRealm
 	BankItems_Save[selfPlayerName] = BankItems_Save[selfPlayerName] or newTable()
 	selfPlayer = BankItems_Save[selfPlayerName]
+	--selfPlayer.TOC = TOC --track TOC version for last save
+	--selfPlayer.VerNum = BANKITEMS_VERSION --track addon version for last save
+	--selfPlayer.outOfDate = nil
+end
 
-	-- Initial player to display is self
-	BankItems_SetPlayer(selfPlayerName)
-
-	BankItems_UserDropdownGenerateKeys()
-	BankItems_UserDropdown.initialize = BankItems_UserDropdown_Initialize
-	BankItems_UserDropdown.selectedValue = selfPlayerName
-	BankItems_UserDropdownText:SetText(gsub(selfPlayerName, "|", " of "))
-
+function BankItems_Initialize2()
+	-- Fires at VARIABLES_LOADED
 	if (not BankItems_Save.pospoint) then
+		BankItems_Chat("BI: Missing position data, using defaults")
 		BankItems_Save.pospoint = "TOPLEFT"
 		BankItems_Save.posrelpoint = "TOPLEFT"
 		BankItems_Save.posoffsetx = 50
 		BankItems_Save.posoffsety = -104
 	end
+	BankItems_Frame:ClearAllPoints()
+	--BankItems_Frame:SetWidth(403)
+	--BankItems_Frame:SetHeight(430)
+	-- TODO: This does not utilize the saved position at all
+	--       not even retail works.
 	BankItems_Frame:SetPoint(BankItems_Save.pospoint, UIParent, BankItems_Save.posrelpoint, BankItems_Save.posoffsetx, BankItems_Save.posoffsety)
-	-- TODO: Action[SetPoint] failed because[SetPoint would result in anchor family connection]: attempted from: BankItems_Frame:SetPoint.
-	-- Unknown reproduction steps
+	BankItems_Chat("BI: posoffsetx" .. BankItems_Save.posoffsetx)
+	BankItems_Chat("BI: posoffsety" .. BankItems_Save.posoffsety)
 
 	-- Upgrade behavior
 	if (type(BankItems_Save.Behavior) == "number") then
@@ -1228,6 +1253,15 @@ function BankItems_Initialize()
 	elseif (type(BankItems_Save.Behavior) ~= "table") then
 		BankItems_Save.Behavior = {false, false, false}
 	end
+
+	-- TODO should these lines be moved somewhere? --
+	-- Initial player to display is self
+	BankItems_SetPlayer(selfPlayerName)
+
+	BankItems_UserDropdownGenerateKeys()
+	BankItems_UserDropdown.initialize = BankItems_UserDropdown_Initialize
+	BankItems_UserDropdown.selectedValue = selfPlayerName
+	BankItems_UserDropdownText:SetText(gsub(selfPlayerName, "|", " of "))
 end
 
 function BankItems_SetPlayer(playerName)
@@ -2445,6 +2479,7 @@ BankItems_Frame:SetScript("OnEvent", BankItems_Frame_OnEvent)
 BankItems_Frame:SetScript("OnDragStart", BankItems_Frame_OnDragStart)
 BankItems_Frame:SetScript("OnDragStop", BankItems_Frame_OnDragStop)
 BankItems_Frame:RegisterEvent("VARIABLES_LOADED")
+BankItems_Frame:RegisterEvent("PLAYER_LOGIN")
 BankItems_Frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 BankItems_Frame:RegisterEvent("PLAYER_MONEY")
 BankItems_Frame:RegisterEvent("ZONE_CHANGED")
