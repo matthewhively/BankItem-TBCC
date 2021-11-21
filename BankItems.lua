@@ -1192,9 +1192,9 @@ function BankItems_SlashHandler(msg)
 	end
 
 	if (BankItems_Frame:IsVisible()) then
-		HideUIPanel(BankItems_Frame)
+        BankItems_Frame:Hide()
 	else
-		ShowUIPanel(BankItems_Frame)
+        BankItems_Frame:Show()
 		if (allBags == 3) then
 			BankItems_OpenBagsByBehavior(true, true, false)
 		elseif (allBags == 2) then
@@ -2960,7 +2960,7 @@ do
 	BankItems_OptionsFrame_WindowStyle:SetHitRectInsets(0, -210, 0, 0)
 	BankItems_OptionsFrame_WindowStyleText:SetText(BANKITEMS_WINDOW_STYLE_TEXT)
 	BankItems_OptionsFrame_WindowStyle:SetScript("OnClick", function(self)
-		HideUIPanel(BankItems_Frame)
+        BankItems_Frame:Hide()
 		if (BankItems_Save.WindowStyle == 2) then
 			BankItems_Save.WindowStyle = 1
 			self:SetChecked(false)
